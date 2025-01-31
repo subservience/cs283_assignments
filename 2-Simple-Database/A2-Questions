@@ -1,0 +1,19 @@
+Andy Vo 
+
+1. Yes, externalizing get_student, would improve how the code works, just making it easier to read and maintain.
+
+2. The given code returns a pointer to a local variable, which is put on the stack, once the function returns it is deallocated, making the point no longer work, which can/will lead to bugs.
+
+3. The malloc() works correctly and lets the function return a valid pointer. However if we forget to free that memory, then it could lead to memory leaks and bad memory usage.
+
+4a. 
+ID = 1 * 64 = 64 + 64 = 128 
+ID = 3 * 64 = 192 + 64 = 256 
+ID = 64 * 64 = 4096 + 64 = 4160
+
+It seems that we add another 64 on top of what our ID is * 64. 
+
+4b. The storage disk remained unchanged because the memory is set in blocks, and we can only access those blocks once we go past our currrent block. Meaning our memory will not change until we need more memory.
+
+4c.
+ID = 99999 * 64 + 64 = 6.4 MB. The disk is still really small compared to the file size due to what was said in 4b. We have not unlocked that area of memory yet since we have not used up the memory in the block that we are currently in. 
