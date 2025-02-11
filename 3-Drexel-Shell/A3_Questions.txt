@@ -1,0 +1,19 @@
+1. fgets() reads a full line at a time, which ensures complete commands. It also preserves white space and handles EOF.
+
+2. malloc() allocates memory when needed and doesn't waste memory on a large fixed-sized array.
+
+3. build_cmd_list() trim leading and trailing spaces because it prevents execution erorrs as it might not match valid executables. It makes it so commands can be processed correctly more consistently. 
+
+4a. 
+
+Redirecting output to a file, the challenge would be handing file permissions and making sure the output gets passed on correctly.
+
+Redirecting input from a file, the challenge would be if the file does not exist or has permissions that we can't passed, or if anything in the file gets transferred incorrectly.
+
+Redirecting STDOUT and STDERR, making sure the order of the redirections so errors and output are in the right sequence. 
+
+4b. Piping directs input/output to/from a file. It works with files, processes, and easier to implement, but requires handling multiple processes.
+
+4c. STDOUT is for outputs, while STDERR are for error messages. Separating them makes sure the error message doesn't somehow get over to the STDOUT and can process output without mistaking errors to be valid data.
+
+4d. It should handle the command errors separately. Make sure to show them clearly so the user knows what the error is. We can merge them using the redirection of 2>&1, This way we could put both the error message and the output in the same file, easier for viewing.
