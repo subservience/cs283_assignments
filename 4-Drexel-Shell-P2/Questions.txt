@@ -1,0 +1,19 @@
+1. Calling fork creates a child process to run a command while the parent can still do its own thing. If we run execvp() directly in the parent process, then the shell would be replaced. The value in fork(), is that the shell remains active while the child processes the new command.
+
+2. If the fork() fails, that means we ran out of memory. We handle this scenario by having an error that returns "fork failed".
+
+3. execvp() searches for the directories/files listed in the path. For example, typing ls searches the directories and prints out the files and directories.
+
+4. The purpose of wait() is to make the parent process pause until the child process finishes with its execution. The child would become a zombie if we don't call wait().
+
+5. WEXITSTATUS(), extracts the exit status of a terminated child process. This tells us if a command failed or succeeded. 
+
+6. build_cmd_buff() handles it as a single argument. This is necessary because if it wasn't then it would split up everything in the quotes. Such as, "hello" "world", instead of "hello world"
+
+7. We switched from command_list_t to cmd_buff_t, processed quoted strings as single arguments. The challenge was re-reading the directions on how to transfer code from dsh_cli.c over to dshlib.c, directions slightly confusing but I got it. Another challenge was checking parsing without breaking command structures.
+
+8a. Signals are used for process communication, alloing one process to notify another process of an event. Signals stop after a process, while other methods allow data exchanges.
+
+8b. SIGKILL, SIGTERM, and SIGINT. SIGKILL forces a process to terminate. SIGTERMAsks a process to terminate. SIGINT is also another way to stpo a running process. 
+
+8c. SIGSTOP pauses a process. It can not be caught or ignored like SIGINT. This is because in SIGINT, the program can take its time and save what it wants. However when the command of SIGSTOP comes on, the program MUST pause. SIGCONT continues the process.
