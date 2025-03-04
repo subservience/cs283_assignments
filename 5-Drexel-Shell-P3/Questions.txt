@@ -1,0 +1,9 @@
+Andy Vo 
+
+1. The shell uses waitpid() in a loop to wait for the child processes to finish. This makes sure that we complete all processes before taking on more. If waitpid() is not called, then we would have processes that have completed execution but are still in the shell, leading to leaks.
+
+2. After calling dup2(), the original file are no longer needed and should be closed to prevent leaks. If the unused pipes are left open, then the child processes may not finish correctly because they are still waiting on an answer from the pipe.
+
+3. cd is implemented as a built-in command because it needs to modify the current working directory of the shell process itself. If cd was a external command, the shell working directory would not change.
+
+4. We could use arrays and allocate memory for the command_list_t, using malloc(). The trade off would be that the memory management would be more complex, and failures if the number of commands are very very large.
