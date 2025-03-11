@@ -1,0 +1,11 @@
+Andy Vo 
+
+1. The remote client determines when a command's output is fully receieved. In the case of the remote shell, the server sends an EOF character to show the end of the command's output. The client reads data and checks if the last byte of the recieved data is the EOF character. If it is, then the client knows the transmission is complete. Techniques that can be used to handle partial reads or ensure complete message transmission would be, looping recv(), buffering, and framing. 
+
+2. A networked shell protocol must define its own mechanism to detect the beginning and end of a command because TCP does not preserve message boundaries. A networked shell protocol would use an EOF character to detect the end of the command sent over the TCP. If this is not handled correctly, then commands could be split or merged and there would be data loss.
+
+3. Stateful and stateless protocols differ in how they manage and maintain information. Stateful protocols maintain a record of the connection's state, meaning the server keeps track of previous interactions. However, in stateless protocol, it treats each client request as independent, with no memory of prior interaction.
+
+4. UDP is "unreliable" because it does not gaurentee error checking. However, it is useful in loss tolerance and applications where small, frequent messages are commonplace.
+
+5. The Socket API.
