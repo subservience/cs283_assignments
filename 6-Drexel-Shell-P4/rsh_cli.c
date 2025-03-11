@@ -63,9 +63,7 @@ int exec_remote_cmd_loop(char *address, int port) {
                 rsp_buff[io_size - 1] = '\0'; // Replace EOF with null terminator
             }
 
-	    printf("Received from server: %.*s\n", (int)io_size, rsp_buff);
-
-            printf("%.*s", (int)io_size, rsp_buff);
+            printf("%s\n", rsp_buff);
 
             if (is_eof) {
                 break;
@@ -132,3 +130,4 @@ int client_cleanup(int cli_socket, char *cmd_buff, char *rsp_buff, int rc) {
 
     return rc;
 }
+

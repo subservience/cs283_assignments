@@ -11,6 +11,14 @@
 #include "dshlib.h"
 #include "rshlib.h"
 
+/*
+ * start_server(ifaces, port, is_threaded)
+ *      ifaces:        The network interface address to bind to.
+ *      port:          The port number to listen on.
+ *      is_threaded:   Whether to run in threaded mode (not used in this version).
+ * 
+ * This function starts the remote shell server.
+ */
 int start_server(char *ifaces, int port, int is_threaded) {
     (void)is_threaded; // Explicitly mark the parameter as unused
     int svr_socket;
@@ -28,10 +36,23 @@ int start_server(char *ifaces, int port, int is_threaded) {
     return rc;
 }
 
+/*
+ * stop_server(svr_socket)
+ *      svr_socket: The server socket to close.
+ * 
+ * This function stops the server by closing its socket.
+ */
 int stop_server(int svr_socket) {
     return close(svr_socket);
 }
 
+/*
+ * boot_server(ifaces, port)
+ *      ifaces:  The network interface address to bind to.
+ *      port:    The port number to listen on.
+ * 
+ * This function initializes and starts the server socket.
+ */
 int boot_server(char *ifaces, int port) {
     int svr_socket;
     int ret;
@@ -68,6 +89,12 @@ int boot_server(char *ifaces, int port) {
     return svr_socket;
 }
 
+/*
+ * process_cli_requests(svr_socket)
+ *      svr_socket: The main server socket.
+ * 
+ * This function accepts incoming client connections and processes their requests.
+ */
 int process_cli_requests(int svr_socket) {
     int cli_socket;
     int rc = OK;
@@ -89,6 +116,12 @@ int process_cli_requests(int svr_socket) {
     return rc;
 }
 
+/*
+ * exec_client_requests(cli_socket)
+ *      cli_socket: The client socket.
+ * 
+ * This function reads commands from the client, executes them, and returns results.
+ */
 int exec_client_requests(int cli_socket) {
     char *io_buff = malloc(RDSH_COMM_BUFF_SZ);
     command_list_t cmd_list;
@@ -106,7 +139,7 @@ int exec_client_requests(int cli_socket) {
         }
 
         io_buff[rc] = '\0';
-	printf("Received command: %s\n", io_buff);
+        printf("Received command: %s\n", io_buff);
 
         if (strcmp(io_buff, EXIT_CMD) == 0) {
             free(io_buff);
@@ -114,9 +147,13 @@ int exec_client_requests(int cli_socket) {
         }
 
         if (strcmp(io_buff, "stop-server") == 0) {
-            free(io_buff);
-            return OK_EXIT;
+   	     printf("Stopping server...\n");  // Print to server logs for debugging
+   	     send_message_string(cli_socket, "Stopping server\n");  // Notify client
+    	     send_message_eof(cli_socket);  // Signal end of response
+    	     free(io_buff);
+    	     return OK_EXIT;  // Ensure it cleanly exits
         }
+
 
         rc = build_cmd_list(io_buff, &cmd_list);
         if (rc != OK) {
@@ -126,7 +163,7 @@ int exec_client_requests(int cli_socket) {
         }
 
         rc = rsh_execute_pipeline(cli_socket, &cmd_list);
-	printf("Command output: %s\n", io_buff);
+        printf("Command output: %s\n", io_buff);
         send_message_eof(cli_socket);
     }
 
@@ -134,6 +171,12 @@ int exec_client_requests(int cli_socket) {
     return OK;
 }
 
+/*
+ * send_message_eof(cli_socket)
+ *      cli_socket: The client socket.
+ * 
+ * This function sends the EOF character to the client to indicate the end of a response.
+ */
 int send_message_eof(int cli_socket) {
     int send_len = (int)sizeof(RDSH_EOF_CHAR);
     int sent_len = send(cli_socket, &RDSH_EOF_CHAR, send_len, 0);
@@ -144,7 +187,15 @@ int send_message_eof(int cli_socket) {
     return OK;
 }
 
+/*
+ * send_message_string(cli_socket, buff)
+ *      cli_socket: The client socket.
+ *      buff:       The message to send.
+ * 
+ * This function sends a string message to the client and ensures it ends with a newline.
+ */
 int send_message_string(int cli_socket, char *buff) {
+    strcat(buff, "\n");
     int send_len = strlen(buff) + 1;
     int sent_len = send(cli_socket, buff, send_len, 0);
 
@@ -154,8 +205,14 @@ int send_message_string(int cli_socket, char *buff) {
     return OK;
 }
 
+/*
+ * rsh_execute_pipeline(cli_socket, clist)
+ *      cli_socket: The client socket.
+ *      clist:      The list of commands to execute.
+ * 
+ * This function executes a command pipeline and sends results to the client.
+ */
 int rsh_execute_pipeline(int cli_sock, command_list_t *clist) {
-    (void)cli_sock; // Explicitly mark the parameter as unused (temporary)
     int pipes[clist->num - 1][2];
     pid_t pids[clist->num];
     int exit_code;
@@ -177,39 +234,37 @@ int rsh_execute_pipeline(int cli_sock, command_list_t *clist) {
         }
 
         if (pids[i] == 0) { // Child process
-            // Redirect stdin for the first command
-            if (i == 0) {
-                // TODO: Redirect stdin to cli_sock
+            if (i > 0) {
+                dup2(pipes[i - 1][0], STDIN_FILENO);
             }
 
-            // Redirect stdout for the last command
-            if (i == clist->num - 1) {
-                // TODO: Redirect stdout and stderr to cli_sock
-            }
+            if (i < clist->num - 1) {
+                dup2(pipes[i][1], STDOUT_FILENO);
+            } else {
+                dup2(cli_sock, STDOUT_FILENO);  // Send final output to client
+                dup2(cli_sock, STDERR_FILENO);  // Ensure errors go to client
+	    }
 
-            // Close all pipe ends
             for (int j = 0; j < clist->num - 1; j++) {
                 close(pipes[j][0]);
                 close(pipes[j][1]);
             }
 
-            // Execute command
             execvp(clist->commands[i].argv[0], clist->commands[i].argv);
             perror("execvp");
             exit(250);
         }
     }
 
-    // Parent process: close all pipe ends
     for (int i = 0; i < clist->num - 1; i++) {
         close(pipes[i][0]);
         close(pipes[i][1]);
     }
 
-    // Wait for all child processes
     for (int i = 0; i < clist->num; i++) {
         waitpid(pids[i], &exit_code, 0);
     }
 
     return WEXITSTATUS(exit_code);
 }
+

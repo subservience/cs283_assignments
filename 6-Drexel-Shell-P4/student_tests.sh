@@ -9,9 +9,15 @@ start_server() {
 
 # Helper function to stop the server
 stop_server() {
-    kill $SERVER_PID
-    wait $SERVER_PID 2>/dev/null
+    if ps -p $SERVER_PID > /dev/null; then
+        echo "Stopping server gracefully..."
+        kill $SERVER_PID
+        wait $SERVER_PID 2>/dev/null
+    else
+        echo "Server already stopped."
+    fi
 }
+
 
 setup() {
     start_server
