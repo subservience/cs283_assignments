@@ -22,8 +22,6 @@ typedef struct cmd_args{
   int   threaded_server;
 }cmd_args_t;
 
-
-
 //You dont really need to understand this but the C runtime library provides
 //an getopt() service to simplify handling command line arguments.  This
 //code will help setup dsh to handle triggering client or server mode along
@@ -45,7 +43,6 @@ void parse_args(int argc, char *argv[], cmd_args_t *cargs) {
   int opt;
   memset(cargs, 0, sizeof(cmd_args_t));
 
-  //defaults
   cargs->mode = MODE_LCLI;
   cargs->port = RDSH_DEF_PORT;
 
@@ -73,7 +70,7 @@ void parse_args(int argc, char *argv[], cmd_args_t *cargs) {
                   exit(EXIT_FAILURE);
               }
               strncpy(cargs->ip, optarg, sizeof(cargs->ip) - 1);
-              cargs->ip[sizeof(cargs->ip) - 1] = '\0';  // Ensure null termination
+              cargs->ip[sizeof(cargs->ip) - 1] = '\0'; 
               break;
           case 'p':
               if (cargs->mode == MODE_LCLI) {

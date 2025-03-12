@@ -11,22 +11,14 @@
 #include "dshlib.h"
 #include "rshlib.h"
 
-/*
- * start_server(ifaces, port, is_threaded)
- *      ifaces:        The network interface address to bind to.
- *      port:          The port number to listen on.
- *      is_threaded:   Whether to run in threaded mode (not used in this version).
- * 
- * This function starts the remote shell server.
- */
 int start_server(char *ifaces, int port, int is_threaded) {
-    (void)is_threaded; // Explicitly mark the parameter as unused
+    (void)is_threaded; 
     int svr_socket;
     int rc;
 
     svr_socket = boot_server(ifaces, port);
     if (svr_socket < 0) {
-        return svr_socket; // Return error code
+        return svr_socket; 
     }
 
     rc = process_cli_requests(svr_socket);
@@ -36,23 +28,10 @@ int start_server(char *ifaces, int port, int is_threaded) {
     return rc;
 }
 
-/*
- * stop_server(svr_socket)
- *      svr_socket: The server socket to close.
- * 
- * This function stops the server by closing its socket.
- */
 int stop_server(int svr_socket) {
     return close(svr_socket);
 }
 
-/*
- * boot_server(ifaces, port)
- *      ifaces:  The network interface address to bind to.
- *      port:    The port number to listen on.
- * 
- * This function initializes and starts the server socket.
- */
 int boot_server(char *ifaces, int port) {
     int svr_socket;
     int ret;
@@ -89,12 +68,6 @@ int boot_server(char *ifaces, int port) {
     return svr_socket;
 }
 
-/*
- * process_cli_requests(svr_socket)
- *      svr_socket: The main server socket.
- * 
- * This function accepts incoming client connections and processes their requests.
- */
 int process_cli_requests(int svr_socket) {
     int cli_socket;
     int rc = OK;
@@ -116,12 +89,6 @@ int process_cli_requests(int svr_socket) {
     return rc;
 }
 
-/*
- * exec_client_requests(cli_socket)
- *      cli_socket: The client socket.
- * 
- * This function reads commands from the client, executes them, and returns results.
- */
 int exec_client_requests(int cli_socket) {
     char *io_buff = malloc(RDSH_COMM_BUFF_SZ);
     command_list_t cmd_list;
@@ -142,9 +109,9 @@ int exec_client_requests(int cli_socket) {
         printf("Received command: %s\n", io_buff);
 
         if (strcmp(io_buff, EXIT_CMD) == 0) {
-    	    printf("Client exiting...\n");  // Log server-side exit message
-    	    send_message_string(cli_socket, "Client exiting...\n"); // Notify client
-    	    send_message_eof(cli_socket); // Signal end of message
+    	    printf("Client exiting...\n");  
+    	    send_message_string(cli_socket, "Client exiting...\n");
+    	    send_message_eof(cli_socket); 
     	    free(io_buff);
     	    return OK;
         }
