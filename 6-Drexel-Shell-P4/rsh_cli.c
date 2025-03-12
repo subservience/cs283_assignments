@@ -53,6 +53,7 @@ int exec_remote_cmd_loop(char *address, int port) {
 
         // Handle exit command
         if (strcmp(cmd_buff, EXIT_CMD) == 0) {
+            printf("Exiting client\n"); // Print exit message
             break;
         }
 
@@ -63,6 +64,7 @@ int exec_remote_cmd_loop(char *address, int port) {
                 rsp_buff[io_size - 1] = '\0'; // Replace EOF with null terminator
             }
 
+            // Print the server's response
             printf("%s\n", rsp_buff);
 
             if (is_eof) {
@@ -130,4 +132,3 @@ int client_cleanup(int cli_socket, char *cmd_buff, char *rsp_buff, int rc) {
 
     return rc;
 }
-

@@ -12,7 +12,7 @@ stop_server() {
     if ps -p $SERVER_PID > /dev/null; then
         echo "Stopping server gracefully..."
         kill $SERVER_PID
-        wait $SERVER_PID 2>/dev/null
+        wait $SERVER_PID 2>/dev/null || true
     else
         echo "Server already stopped."
     fi
@@ -65,7 +65,7 @@ EOF
     echo "Output: $output"
     echo "Exit Status: $status"
 
-    [[ "$output" == *"error"* ]] # Check for error message
+    [[ "$output" == *"execvp failed: No such file or directory"* ]] # Check for error message
     [ "$status" -eq 0 ]
 }
 
@@ -78,7 +78,10 @@ EOF
     echo "Output: $output"
     echo "Exit Status: $status"
 
-    [[ "$output" == *"Exiting client"* ]] # Check for exit message
+    [[ "$output" == *"socket client mode:  addr:127.0.0.1:1234"* ]] &&
+    [[ "$output" == *"dsh4> cmd loop returned 0"* ]] &&
+    [[ "$output" == *"Exit Status: 0"* ]] &&
+    [[ "$output" == *"Stopping server gracefully..."* ]] # Check for exit message
     [ "$status" -eq 0 ]
 }
 
@@ -91,6 +94,9 @@ EOF
     echo "Output: $output"
     echo "Exit Status: $status"
 
+    [[ "$output" == *"socket client mode:  addr:127.0.0.1:1234"* ]] &&
+    [[ "$output" == *"dsh4> cmd loop returned 0"* ]] &&
+    [[ "$output" == *"Exit Status: 0"* ]] &&
     [[ "$output" == *"Stopping server"* ]] # Check for server shutdown message
     [ "$status" -eq 0 ]
 }

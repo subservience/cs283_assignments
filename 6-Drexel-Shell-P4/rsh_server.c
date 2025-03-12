@@ -142,18 +142,20 @@ int exec_client_requests(int cli_socket) {
         printf("Received command: %s\n", io_buff);
 
         if (strcmp(io_buff, EXIT_CMD) == 0) {
-            free(io_buff);
-            return OK;
+    	    printf("Client exiting...\n");  // Log server-side exit message
+    	    send_message_string(cli_socket, "Client exiting...\n"); // Notify client
+    	    send_message_eof(cli_socket); // Signal end of message
+    	    free(io_buff);
+    	    return OK;
         }
 
         if (strcmp(io_buff, "stop-server") == 0) {
-   	     printf("Stopping server...\n");  // Print to server logs for debugging
-   	     send_message_string(cli_socket, "Stopping server\n");  // Notify client
-    	     send_message_eof(cli_socket);  // Signal end of response
-    	     free(io_buff);
-    	     return OK_EXIT;  // Ensure it cleanly exits
+            printf("Stopping server...\n");
+            send_message_string(cli_socket, "Stopping server\n");
+            send_message_eof(cli_socket);
+            free(io_buff);
+            return OK_EXIT;
         }
-
 
         rc = build_cmd_list(io_buff, &cmd_list);
         if (rc != OK) {
@@ -163,7 +165,12 @@ int exec_client_requests(int cli_socket) {
         }
 
         rc = rsh_execute_pipeline(cli_socket, &cmd_list);
-        printf("Command output: %s\n", io_buff);
+        if (rc != OK) {
+            send_message_string(cli_socket, "error: command execution failed\n");
+            send_message_eof(cli_socket);
+            continue;
+        }
+
         send_message_eof(cli_socket);
     }
 
@@ -217,7 +224,7 @@ int rsh_execute_pipeline(int cli_sock, command_list_t *clist) {
     pid_t pids[clist->num];
     int exit_code;
 
-    // Create pipes
+    // Create pipes for communication between commands
     for (int i = 0; i < clist->num - 1; i++) {
         if (pipe(pipes[i]) == -1) {
             perror("pipe");
@@ -225,7 +232,7 @@ int rsh_execute_pipeline(int cli_sock, command_list_t *clist) {
         }
     }
 
-    // Fork and execute commands
+    // Fork and execute each command in the pipeline
     for (int i = 0; i < clist->num; i++) {
         pids[i] = fork();
         if (pids[i] < 0) {
@@ -234,37 +241,44 @@ int rsh_execute_pipeline(int cli_sock, command_list_t *clist) {
         }
 
         if (pids[i] == 0) { // Child process
+            // Redirect input for commands after the first
             if (i > 0) {
-                dup2(pipes[i - 1][0], STDIN_FILENO);
+                dup2(pipes[i - 1][0], STDIN_FILENO); // Read from previous pipe
             }
 
+            // Redirect output for commands before the last
             if (i < clist->num - 1) {
-                dup2(pipes[i][1], STDOUT_FILENO);
+                dup2(pipes[i][1], STDOUT_FILENO); // Write to next pipe
             } else {
+                // For the last command, send output to the client socket
                 dup2(cli_sock, STDOUT_FILENO);  // Send final output to client
                 dup2(cli_sock, STDERR_FILENO);  // Ensure errors go to client
-	    }
+            }
 
+            // Close all pipe file descriptors in the child process
             for (int j = 0; j < clist->num - 1; j++) {
                 close(pipes[j][0]);
                 close(pipes[j][1]);
             }
 
+            // Execute the command
             execvp(clist->commands[i].argv[0], clist->commands[i].argv);
-            perror("execvp");
-            exit(250);
+            perror("execvp failed"); // If execvp fails
+            exit(250); // Exit with an error code
         }
     }
 
+    // Parent process: close all pipe file descriptors
     for (int i = 0; i < clist->num - 1; i++) {
         close(pipes[i][0]);
         close(pipes[i][1]);
     }
 
+    // Wait for all child processes to complete
     for (int i = 0; i < clist->num; i++) {
         waitpid(pids[i], &exit_code, 0);
     }
 
+    // Return the exit code of the last command in the pipeline
     return WEXITSTATUS(exit_code);
 }
-
